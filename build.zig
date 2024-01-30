@@ -19,8 +19,30 @@ pub fn build(b: *Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const version_info = b.addExecutable(.{
+        .name = "generate_version_info",
+        .root_source_file = .{ .path = "generate_version_info.zig" },
+        .target = target,
+    });
+
+    const verinfo_step = b.addRunArtifact(version_info);
+    const gen_output = verinfo_step.addOutputFileArg("version_info.zig");
+    verinfo_step.addArg("0");
+    verinfo_step.addArg("0");
+    verinfo_step.addArg("1");
+    verinfo_step.addArg("true");
+
+    const concat = b.addExecutable(.{
+        .name = "generate_concat",
+        .root_source_file = .{ .path = "generate_concat.zig" },
+        .target = target,
+    });
+
+    const gen_concat_step = b.addRunArtifact(concat);
+    const concat_output = gen_concat_step.addOutputFileArg("concat.zig");
+
     const exe = b.addExecutable(.{
-        .name = "launchpad",
+        .name = "bootx64",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "index.zig" },
@@ -30,6 +52,14 @@ pub fn build(b: *Build) void {
             .abi = Target.Abi.msvc,
         },
         .optimize = optimize,
+    });
+
+    exe.addAnonymousModule("version_info", .{
+        .source_file = gen_output,
+    });
+
+    exe.addAnonymousModule("concat", .{
+        .source_file = concat_output,
     });
 
     // This declares intent for the executable to be installed into the
@@ -47,12 +77,6 @@ pub fn build(b: *Build) void {
 
         "-m",
         "128M",
-        // for Fedora:
-        // "-drive", "if=pflash,format=raw,readonly=on,file=/usr/share/edk2/ovmf/OVMF_CODE.fd",
-        // "-drive", "if=pflash,format=raw,readonly=on,file=/usr/share/edk2/ovmf/OVMF_VARS.fd",
-        // for Ubuntu
-        // "-device",
-        // "VGA,xres=1280,yres=800",
 
         "-drive",
         "if=pflash,format=raw,readonly=on,file=./arch/x64/code.fd",
@@ -64,7 +88,7 @@ pub fn build(b: *Build) void {
         "format=raw,file=fat:rw:esp",
 
         "-kernel",
-        "esp/efi/boot/launchpad.efi",
+        "esp/efi/boot/bootx64.efi",
 
         "-debugcon",
         "stdio",

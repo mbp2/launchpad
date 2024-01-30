@@ -66,7 +66,7 @@ pub fn main() void {
         puts("*** simple text output protocol is NOT supported ***\r\n");
     }
 
-    _ = boot_services.stall(3 * 1000);
+    _ = boot_services.stall(3 * 1000 * 1000);
 
     // Check if we have a relative pointing device (i.e. mouse, touchpad):
     if (boot_services.locateProtocol(&uefi.protocols.SimplePointerProtocol.guid, null, @as(*?*anyopaque, @ptrCast(&spp))) == uefi.Status.Success) {
@@ -93,7 +93,7 @@ pub fn main() void {
         puts("*** simple pointer protocol is NOT supported ***\r\n");
     }
 
-    _ = boot_services.stall(3 * 1000);
+    _ = boot_services.stall(3 * 1000 * 1000);
 
     // Check if we have an absolute pointing device (i.e. touchscreen):
     if (boot_services.locateProtocol(&uefi.protocols.AbsolutePointerProtocol.guid, null, @as(*?*anyopaque, @ptrCast(&app))) == uefi.Status.Success) {
@@ -118,7 +118,7 @@ pub fn main() void {
         puts("*** absolute pointer protocol is NOT supported ***\r\n");
     }
 
-    _ = boot_services.stall(3 * 1000);
+    _ = boot_services.stall(3 * 1000 * 1000);
 
     // Check if the device supports the Graphics Output Protocol:
     if (boot_services.locateProtocol(&uefi.protocols.GraphicsOutputProtocol.guid, null, @as(*?*anyopaque, @ptrCast(&gop))) == uefi.Status.Success) {
@@ -141,7 +141,7 @@ pub fn main() void {
         puts("*** graphics output protocol is NOT supported ***\r\n");
     }
 
-    _ = boot_services.stall(3 * 1000);
+    _ = boot_services.stall(3 * 1000 * 1000);
 
     if (boot_services.locateProtocol(&uefi.protocols.RNGProtocol.guid, null, @as(*?*anyopaque, @ptrCast(&rng))) == uefi.Status.Success) {
         puts("*** random number generation is supported ***\r\n");
@@ -166,7 +166,7 @@ pub fn main() void {
         puts("*** random number generation is NOT supported ***\r\n");
     }
 
-    _ = boot_services.stall(3 * 1000);
+    _ = boot_services.stall(3 * 1000 * 1000);
 
     var name_size = buffer_size;
     switch (runtime_services.getNextVariableName(&name_size, name, &guid)) {
@@ -197,7 +197,7 @@ pub fn main() void {
 
     // TODO read some variables
 
-    _ = boot_services.stall(10 * 1000);
+    _ = boot_services.stall(10 * 1000 * 1000);
 
     // Get the GOP framebuffer:
     framebuffer = @as([*]u8, @ptrFromInt(gop.?.mode.frame_buffer_base));
@@ -240,7 +240,12 @@ pub fn main() void {
     //    }
     //}
 
-    printf(framebuffer[0..100], "We have reached the end!", .{});
+    printf(framebuffer[0..25], "We have reached the end!", .{});
 
     while (true) {}
 }
+
+// EXPORTS //
+
+pub const application = @import("application.zig");
+pub const locks = @import("locks.zig");
