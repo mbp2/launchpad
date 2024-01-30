@@ -162,12 +162,13 @@ pub const SystemMap = extern struct {
    }
 };
 
-pub const Mapping = extern struct {
+pub const Mapping = union(enum) {
    address: u64,
+   dynmap: DynamicMapping,
 
    pub fn dynamic() Mapping {
       return Mapping{
-         .address = 0,
+         .dynmap = DynamicMapping{},
       };
    }
 
@@ -185,6 +186,8 @@ pub const Mapping = extern struct {
       }
    }
 };
+
+pub const DynamicMapping = extern struct{};
 
 // IMPORTS //
 

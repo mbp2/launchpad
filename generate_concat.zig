@@ -2,68 +2,83 @@ pub fn main() !void {
    var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
    defer arena_state.deinit();
    const arena = arena_state.allocator();
-   const file_path = "concat.zig";
+   const args = try std.process.argsAlloc(arena);
+   const file_path = args[1];
    const output_file = std.fs.cwd().createFile(file_path, .{}) catch |err| {
       gen.fatal("unable to open '{s}': {s}", .{ file_path, @errorName(err) });
    };
    defer output_file.close();
 
    const combinations = .{
-      [2]u8 {1, 8},
-      [2]u8 {1, 9},
-      [2]u8 {2, 1},
-      [2]u8 {2, 2},
-      [2]u8 {4, 3},
-      [2]u8 {16, 7},
-      [2]u8 {23, 8},
-      [2]u8 {31, 9},
-      [2]u8 {40, 9},
-      [2]u8 {49, 9},
-      [2]u8 {58, 10},
-      [2]u8 {68, 10},
-      [2]u8 {78, 1},
-      [2]u8 {79, 9},
-      [2]u8 {88, 9},
-      [2]u8 {97, 9},
-      [2]u8 {106, 9},
-      [2]u8 {115, 9},
+      .{ 1, 8 },
+      .{ 1, 9 },
+      .{ 2, 1 },
+      .{ 2, 2 },
+      .{ 4, 3 },
+      .{ 16, 7 },
+      .{ 23, 8 },
+      .{ 31, 9 },
+      .{ 40, 9 },
+      .{ 49, 9 },
+      .{ 58, 10 },
+      .{ 68, 10 },
+      .{ 78, 1 },
+      .{ 79, 9 },
+      .{ 88, 9 },
+      .{ 97, 9 },
+      .{ 106, 9 },
+      .{ 115, 9 },
    };
 
-   var code: [*]u8 = undefined;
-   var a = std.ArrayList([*]u8).init(arena);
-   var b = std.ArrayList([*]u8).init(arena);
+   var code = std.ArrayList(u8).init(arena);
+   var a = std.ArrayList(u8).init(arena);
+   var b = std.ArrayList(u8).init(arena);
    defer a.deinit();
    defer b.deinit();
 
-   for (combinations) |combo| {
-
+   inline for (combinations) |combo| {
       for (0..combo[0]) |idx| {
-         var buffer: [25]u8 = undefined;
-         a.append(try fmt.bufPrint(buffer[0..], "a[{d}]", .{ idx }));
+         var buffer: [100]u8 = undefined;
+         const result = fmt.bufPrint(buffer[0..], "a[{d}]", .{ idx }) catch |err| {
+            gen.fatal("unable to write {s} to buffer: {s}", .{ buffer, @errorName(err) });
+         };
+
+         try a.appendSlice(result);
       }
 
       for (0..combo[1]) |idx| {
-         var buffer: [25]u8 = undefined;
-         b.append(try fmt.bufPrint(buffer[0..], "b[{d}]", .{ idx }));
+         var buffer: [100]u8 = undefined;
+         const result = fmt.bufPrint(buffer[0..], "b[{d}]", .{ idx }) catch |err| {
+            gen.fatal("unable to write {s} to buffer: {s}", .{ buffer, @errorName(err) });
+         };
+
+         try b.appendSlice(result);
       }
 
-      var buffer: [10000]u8 = undefined;
-      code += try fmt.bufPrint(
+      var buffer: [100000]u8 = undefined;
+      var c = std.ArrayList(u8).init(arena);
+      defer c.deinit();
+      try c.appendSlice(a.items);
+      try c.appendSlice(b.items);
+
+      const result = try fmt.bufPrint(
          buffer[0..],
-         \\ pub fn concat_{0d}_{1d}(a: [{0d}]u8, b: [{1d}]u8) [{0d} + {1d}]u8 {
-         \\    return [{0d} + {1d}]u8 {
-         \\       {2s:','}, {3s:','}
-         \\    };
-         \\ }
+         \\ pub fn concat_{0d}_{1d}(a: [{0d}]u8, b: [{1d}]u8) [{0d} + {1d}]u8 {{
+         \\    return [{0d} + {1d}]u8
+         \\       {2d:,>}
+         \\    ;
+         \\ }}
          ,
          .{
             combo[0], combo[1],
-            a.items, b.items
+            c.items
          }
       );
+
+      try code.appendSlice(result);
    }
 
-   try output_file.writeAll(code);
+   try output_file.writeAll(code.items);
    return std.process.cleanExit();
 }
 

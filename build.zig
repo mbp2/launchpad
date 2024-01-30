@@ -1,9 +1,3 @@
-const std = @import("std");
-
-const Build = std.Build;
-const CrossTarget = std.zig.CrossTarget;
-const Target = std.Target;
-
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
@@ -133,3 +127,13 @@ pub fn build(b: *Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
 }
+
+// IMPORTS //
+
+const builtin = @import("builtin");
+const gen = @import("generators.zig");
+const std = @import("std");
+
+const Build = std.Build;
+const CrossTarget = std.zig.CrossTarget;
+const Target = std.Target;

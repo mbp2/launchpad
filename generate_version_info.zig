@@ -11,20 +11,20 @@ pub fn main() !void {
       gen.fatal("wrong number of arguments provided", .{});
    }
 
-   const output_file_path = args[1];
+   const file_path = args[1];
 
-   var output_file = std.fs.cwd().createFile(output_file_path, .{}) catch |err| {
-      gen.fatal("unable to open '{s}': {s}", .{ output_file_path, @errorName(err) });
+   var output_file = std.fs.cwd().createFile(file_path, .{}) catch |err| {
+      gen.fatal("unable to open '{s}': {s}", .{ file_path, @errorName(err) });
    };
    defer output_file.close();
 
    var buffer: [100]u8 = undefined;
    const output_string = try fmt.bufPrint(
       buffer[0..],
-      \\ pub const Major = {s};
-      \\ pub const Minor = {s};
-      \\ pub const Patch = {s};
-      \\ pub const PreRelease = {s};
+      \\ pub const major = {s};
+      \\ pub const minor = {s};
+      \\ pub const patch = {s};
+      \\ pub const pre_release = {s};
       ,
       .{ args[2], args[3], args[4], args[5] }
    );
