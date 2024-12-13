@@ -149,7 +149,7 @@ pub fn main() void {
         // Test the RNG:
         // We can pick a rng, but we're going to use the default one.
         var lucky_number: u8 = undefined;
-        var status = rng.?.getRNG(null, 1, @as([*]u8, @ptrCast(&lucky_number)));
+        const status = rng.?.getRNG(null, 1, @as([*]u8, @ptrCast(&lucky_number)));
         if (status == uefi.Status.Success) {
             printf(buf[0..], "    your lucky number = {}\r\n", .{lucky_number});
         } else {

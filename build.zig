@@ -6,7 +6,13 @@ pub fn build(b: *Build) void {
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
     // for restricting supported target set are available.
-    const target = b.standardTargetOptions(.{});
+    const standard_target = b.standardTargetOptions(.{});
+
+    const target = b.resolveTargetQuery(.{
+        .cpu_arch = Target.Cpu.Arch.x86_64,
+        .os_tag = Target.Os.Tag.uefi,
+        .abi = Target.Abi.msvc,
+    });
 
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
@@ -15,8 +21,8 @@ pub fn build(b: *Build) void {
 
     const version_info = b.addExecutable(.{
         .name = "generate_version_info",
-        .root_source_file = .{ .path = "generate_version_info.zig" },
-        .target = target,
+        .root_source_file = b.path("generate_version_info.zig"),
+        .target = standard_target,
     });
 
     const verinfo_step = b.addRunArtifact(version_info);
@@ -28,8 +34,8 @@ pub fn build(b: *Build) void {
 
     const concat = b.addExecutable(.{
         .name = "generate_concat",
-        .root_source_file = .{ .path = "generate_concat.zig" },
-        .target = target,
+        .root_source_file = b.path("generate_concat.zig"),
+        .target = standard_target,
     });
 
     const gen_concat_step = b.addRunArtifact(concat);
@@ -39,21 +45,17 @@ pub fn build(b: *Build) void {
         .name = "bootx64",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "index.zig" },
-        .target = CrossTarget{
-            .cpu_arch = Target.Cpu.Arch.x86_64,
-            .os_tag = Target.Os.Tag.uefi,
-            .abi = Target.Abi.msvc,
-        },
+        .root_source_file = b.path("index.zig"),
+        .target = target,
         .optimize = optimize,
     });
 
-    exe.addAnonymousModule("version_info", .{
-        .source_file = gen_output,
+    exe.root_module.addAnonymousImport("version_info", .{
+        .root_source_file = gen_output,
     });
 
-    exe.addAnonymousModule("concat", .{
-        .source_file = concat_output,
+    exe.root_module.addAnonymousImport("concat", .{
+        .root_source_file = concat_output,
     });
 
     // This declares intent for the executable to be installed into the
@@ -114,7 +116,7 @@ pub fn build(b: *Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "tests.zig" },
+        .root_source_file = b.path("tests.zig"),
         .target = target,
         .optimize = optimize,
     });
